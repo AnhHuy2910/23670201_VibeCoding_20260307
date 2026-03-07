@@ -12,7 +12,14 @@ engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# SQLAlchemy Model
+# SQLAlchemy Models
+class ClassDB(Base):
+    __tablename__ = "classes"
+    
+    class_id = Column(String, primary_key=True, index=True)
+    class_name = Column(String, nullable=False)
+    advisor = Column(String, nullable=False)
+
 class StudentDB(Base):
     __tablename__ = "students"
     
@@ -32,7 +39,23 @@ import os
 def seed_data():
     db = SessionLocal()
     try:
-        # Check if data already exists
+        # Seed classes
+        if db.query(ClassDB).count() == 0:
+            classes_csv = os.path.join(os.path.dirname(__file__), "classes.csv")
+            if os.path.exists(classes_csv):
+                with open(classes_csv, "r", encoding="utf-8") as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        cls = ClassDB(
+                            class_id=row["class_id"],
+                            class_name=row["class_name"],
+                            advisor=row["advisor"]
+                        )
+                        db.add(cls)
+                db.commit()
+                print("Classes data loaded from classes.csv!")
+        
+        # Seed students
         if db.query(StudentDB).count() == 0:
             csv_path = os.path.join(os.path.dirname(__file__), "data.csv")
             if os.path.exists(csv_path):
@@ -48,7 +71,7 @@ def seed_data():
                         )
                         db.add(student)
                 db.commit()
-                print("Sample data loaded from data.csv!")
+                print("Students data loaded from data.csv!")
     finally:
         db.close()
 
@@ -72,6 +95,23 @@ class StudentUpdate(BaseModel):
     gpa: Optional[float] = None
 
 class Student(StudentBase):
+    class Config:
+        from_attributes = True
+
+# Class Pydantic Models
+class ClassBase(BaseModel):
+    class_id: str
+    class_name: str
+    advisor: str
+
+class ClassCreate(ClassBase):
+    pass
+
+class ClassUpdate(BaseModel):
+    class_name: Optional[str] = None
+    advisor: Optional[str] = None
+
+class Class(ClassBase):
     class Config:
         from_attributes = True
 
@@ -147,6 +187,59 @@ def delete_student(student_id: str, db: Session = Depends(get_db)):
     db.delete(db_student)
     db.commit()
     return {"message": "Student deleted successfully"}
+
+# Class API Endpoints
+@app.get("/classes", response_model=List[Class])
+def get_classes(db: Session = Depends(get_db)):
+    """Get all classes"""
+    return db.query(ClassDB).all()
+
+@app.get("/classes/{class_id}", response_model=Class)
+def get_class(class_id: str, db: Session = Depends(get_db)):
+    """Get a class by ID"""
+    cls = db.query(ClassDB).filter(ClassDB.class_id == class_id).first()
+    if not cls:
+        raise HTTPException(status_code=404, detail="Class not found")
+    return cls
+
+@app.post("/classes", response_model=Class)
+def create_class(cls: ClassCreate, db: Session = Depends(get_db)):
+    """Create a new class"""
+    existing = db.query(ClassDB).filter(ClassDB.class_id == cls.class_id).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Class ID already exists")
+    
+    db_class = ClassDB(**cls.model_dump())
+    db.add(db_class)
+    db.commit()
+    db.refresh(db_class)
+    return db_class
+
+@app.put("/classes/{class_id}", response_model=Class)
+def update_class(class_id: str, cls: ClassUpdate, db: Session = Depends(get_db)):
+    """Update a class"""
+    db_class = db.query(ClassDB).filter(ClassDB.class_id == class_id).first()
+    if not db_class:
+        raise HTTPException(status_code=404, detail="Class not found")
+    
+    update_data = cls.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_class, key, value)
+    
+    db.commit()
+    db.refresh(db_class)
+    return db_class
+
+@app.delete("/classes/{class_id}")
+def delete_class(class_id: str, db: Session = Depends(get_db)):
+    """Delete a class"""
+    db_class = db.query(ClassDB).filter(ClassDB.class_id == class_id).first()
+    if not db_class:
+        raise HTTPException(status_code=404, detail="Class not found")
+    
+    db.delete(db_class)
+    db.commit()
+    return {"message": "Class deleted successfully"}
 
 if __name__ == "__main__":
     import uvicorn

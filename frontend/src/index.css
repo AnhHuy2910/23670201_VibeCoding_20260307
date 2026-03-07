@@ -24,6 +24,33 @@ h1 {
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
 }
 
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.tab {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px 8px 0 0;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.3);
+  color: white;
+  transition: all 0.3s;
+}
+
+.tab:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.tab.active {
+  background: white;
+  color: #667eea;
+}
+
 .card {
   background: white;
   border-radius: 16px;

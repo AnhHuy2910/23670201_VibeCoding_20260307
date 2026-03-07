@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
-import { studentApi } from './api';
+import { studentApi, classApi } from './api';
 
 function App() {
+  const [activeTab, setActiveTab] = useState('students');
+  
+  // Student states
   const [students, setStudents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [loadingStudents, setLoadingStudents] = useState(true);
   const [editingStudent, setEditingStudent] = useState(null);
-  const [formData, setFormData] = useState({
+  const [studentForm, setStudentForm] = useState({
     student_id: '',
     name: '',
     birth_year: '',
@@ -15,44 +16,172 @@ function App() {
     gpa: '',
   });
 
-  // Fetch all students on component mount
+  // Class states
+  const [classes, setClasses] = useState([]);
+  const [loadingClasses, setLoadingClasses] = useState(true);
+  const [editingClass, setEditingClass] = useState(null);
+  const [classForm, setClassForm] = useState({
+    class_id: '',
+    class_name: '',
+    advisor: '',
+  });
+
+  // Common states
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
   useEffect(() => {
     fetchStudents();
+    fetchClasses();
   }, []);
 
+  // ========== STUDENT FUNCTIONS ==========
   const fetchStudents = async () => {
     try {
-      setLoading(true);
+      setLoadingStudents(true);
       const data = await studentApi.getAll();
       setStudents(data);
-      setError('');
     } catch (err) {
-      setError('Failed to fetch students. Make sure the backend is running.');
       console.error(err);
     } finally {
-      setLoading(false);
+      setLoadingStudents(false);
     }
   };
 
-  const handleInputChange = (e) => {
+  const handleStudentInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setStudentForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const resetForm = () => {
-    setFormData({
-      student_id: '',
-      name: '',
-      birth_year: '',
-      major: '',
-      gpa: '',
-    });
+  const resetStudentForm = () => {
+    setStudentForm({ student_id: '', name: '', birth_year: '', major: '', gpa: '' });
     setEditingStudent(null);
   };
 
+  const handleStudentSubmit = async (e) => {
+    e.preventDefault();
+    if (!studentForm.student_id || !studentForm.name || !studentForm.birth_year || !studentForm.major || !studentForm.gpa) {
+      showMessage('error', 'Vui lòng điền đầy đủ thông tin');
+      return;
+    }
+
+    const studentData = {
+      ...studentForm,
+      birth_year: parseInt(studentForm.birth_year),
+      gpa: parseFloat(studentForm.gpa),
+    };
+
+    try {
+      if (editingStudent) {
+        await studentApi.update(editingStudent.student_id, {
+          name: studentData.name,
+          birth_year: studentData.birth_year,
+          major: studentData.major,
+          gpa: studentData.gpa,
+        });
+        showMessage('success', 'Cập nhật sinh viên thành công!');
+      } else {
+        await studentApi.create(studentData);
+        showMessage('success', 'Thêm sinh viên thành công!');
+      }
+      resetStudentForm();
+      fetchStudents();
+    } catch (err) {
+      showMessage('error', err.response?.data?.detail || 'Có lỗi xảy ra');
+    }
+  };
+
+  const handleEditStudent = (student) => {
+    setEditingStudent(student);
+    setStudentForm({
+      student_id: student.student_id,
+      name: student.name,
+      birth_year: student.birth_year.toString(),
+      major: student.major,
+      gpa: student.gpa.toString(),
+    });
+  };
+
+  const handleDeleteStudent = async (studentId) => {
+    if (!window.confirm('Bạn có chắc muốn xóa sinh viên này?')) return;
+    try {
+      await studentApi.delete(studentId);
+      showMessage('success', 'Xóa sinh viên thành công!');
+      fetchStudents();
+    } catch (err) {
+      showMessage('error', err.response?.data?.detail || 'Không thể xóa sinh viên');
+    }
+  };
+
+  // ========== CLASS FUNCTIONS ==========
+  const fetchClasses = async () => {
+    try {
+      setLoadingClasses(true);
+      const data = await classApi.getAll();
+      setClasses(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingClasses(false);
+    }
+  };
+
+  const handleClassInputChange = (e) => {
+    const { name, value } = e.target;
+    setClassForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const resetClassForm = () => {
+    setClassForm({ class_id: '', class_name: '', advisor: '' });
+    setEditingClass(null);
+  };
+
+  const handleClassSubmit = async (e) => {
+    e.preventDefault();
+    if (!classForm.class_id || !classForm.class_name || !classForm.advisor) {
+      showMessage('error', 'Vui lòng điền đầy đủ thông tin');
+      return;
+    }
+
+    try {
+      if (editingClass) {
+        await classApi.update(editingClass.class_id, {
+          class_name: classForm.class_name,
+          advisor: classForm.advisor,
+        });
+        showMessage('success', 'Cập nhật lớp thành công!');
+      } else {
+        await classApi.create(classForm);
+        showMessage('success', 'Thêm lớp thành công!');
+      }
+      resetClassForm();
+      fetchClasses();
+    } catch (err) {
+      showMessage('error', err.response?.data?.detail || 'Có lỗi xảy ra');
+    }
+  };
+
+  const handleEditClass = (cls) => {
+    setEditingClass(cls);
+    setClassForm({
+      class_id: cls.class_id,
+      class_name: cls.class_name,
+      advisor: cls.advisor,
+    });
+  };
+
+  const handleDeleteClass = async (classId) => {
+    if (!window.confirm('Bạn có chắc muốn xóa lớp này?')) return;
+    try {
+      await classApi.delete(classId);
+      showMessage('success', 'Xóa lớp thành công!');
+      fetchClasses();
+    } catch (err) {
+      showMessage('error', err.response?.data?.detail || 'Không thể xóa lớp');
+    }
+  };
+
+  // ========== COMMON FUNCTIONS ==========
   const showMessage = (type, message) => {
     if (type === 'success') {
       setSuccess(message);
@@ -65,208 +194,241 @@ function App() {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    // Validate form
-    if (!formData.student_id || !formData.name || !formData.birth_year || !formData.major || !formData.gpa) {
-      showMessage('error', 'Please fill in all fields');
-      return;
-    }
-
-    const studentData = {
-      ...formData,
-      birth_year: parseInt(formData.birth_year),
-      gpa: parseFloat(formData.gpa),
-    };
-
-    try {
-      if (editingStudent) {
-        // Update existing student
-        await studentApi.update(editingStudent.student_id, {
-          name: studentData.name,
-          birth_year: studentData.birth_year,
-          major: studentData.major,
-          gpa: studentData.gpa,
-        });
-        showMessage('success', 'Student updated successfully!');
-      } else {
-        // Create new student
-        await studentApi.create(studentData);
-        showMessage('success', 'Student added successfully!');
-      }
-      resetForm();
-      fetchStudents();
-    } catch (err) {
-      const errorMessage = err.response?.data?.detail || 'An error occurred';
-      showMessage('error', errorMessage);
-    }
-  };
-
-  const handleEdit = (student) => {
-    setEditingStudent(student);
-    setFormData({
-      student_id: student.student_id,
-      name: student.name,
-      birth_year: student.birth_year.toString(),
-      major: student.major,
-      gpa: student.gpa.toString(),
-    });
-  };
-
-  const handleDelete = async (studentId) => {
-    if (!window.confirm('Are you sure you want to delete this student?')) {
-      return;
-    }
-
-    try {
-      await studentApi.delete(studentId);
-      showMessage('success', 'Student deleted successfully!');
-      fetchStudents();
-    } catch (err) {
-      const errorMessage = err.response?.data?.detail || 'Failed to delete student';
-      showMessage('error', errorMessage);
-    }
-  };
-
   return (
     <div className="container">
-      <h1>Student Management System</h1>
+      <h1>Hệ Thống Quản Lý</h1>
 
-      {/* Form Card */}
-      <div className="card">
-        <h2>{editingStudent ? 'Edit Student' : 'Add New Student'}</h2>
-        
-        {error && <div className="error-message">{error}</div>}
-        {success && <div className="success-message">{success}</div>}
+      {/* Tabs */}
+      <div className="tabs">
+        <button
+          className={`tab ${activeTab === 'students' ? 'active' : ''}`}
+          onClick={() => setActiveTab('students')}
+        >
+          Quản lý Sinh viên
+        </button>
+        <button
+          className={`tab ${activeTab === 'classes' ? 'active' : ''}`}
+          onClick={() => setActiveTab('classes')}
+        >
+          Quản lý Lớp học
+        </button>
+      </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-grid">
-            <div className="form-group">
-              <label htmlFor="student_id">Student ID</label>
-              <input
-                type="text"
-                id="student_id"
-                name="student_id"
-                value={formData.student_id}
-                onChange={handleInputChange}
-                placeholder="e.g., STU001"
-                disabled={editingStudent !== null}
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="name">Full Name</label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                placeholder="e.g., John Doe"
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="birth_year">Birth Year</label>
-              <input
-                type="number"
-                id="birth_year"
-                name="birth_year"
-                value={formData.birth_year}
-                onChange={handleInputChange}
-                placeholder="e.g., 2000"
-                min="1900"
-                max="2024"
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="major">Major</label>
-              <input
-                type="text"
-                id="major"
-                name="major"
-                value={formData.major}
-                onChange={handleInputChange}
-                placeholder="e.g., Computer Science"
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="gpa">GPA</label>
-              <input
-                type="number"
-                id="gpa"
-                name="gpa"
-                value={formData.gpa}
-                onChange={handleInputChange}
-                placeholder="e.g., 3.5"
-                step="0.01"
-                min="0"
-                max="4"
-              />
-            </div>
+      {error && <div className="error-message">{error}</div>}
+      {success && <div className="success-message">{success}</div>}
+
+      {/* STUDENTS TAB */}
+      {activeTab === 'students' && (
+        <>
+          <div className="card">
+            <h2>{editingStudent ? 'Sửa Sinh viên' : 'Thêm Sinh viên'}</h2>
+            <form onSubmit={handleStudentSubmit}>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label>Mã sinh viên</label>
+                  <input
+                    type="text"
+                    name="student_id"
+                    value={studentForm.student_id}
+                    onChange={handleStudentInputChange}
+                    placeholder="VD: SV001"
+                    disabled={editingStudent !== null}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Họ tên</label>
+                  <input
+                    type="text"
+                    name="name"
+                    value={studentForm.name}
+                    onChange={handleStudentInputChange}
+                    placeholder="VD: Nguyễn Văn A"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Năm sinh</label>
+                  <input
+                    type="number"
+                    name="birth_year"
+                    value={studentForm.birth_year}
+                    onChange={handleStudentInputChange}
+                    placeholder="VD: 2005"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Ngành học</label>
+                  <input
+                    type="text"
+                    name="major"
+                    value={studentForm.major}
+                    onChange={handleStudentInputChange}
+                    placeholder="VD: Công nghệ thông tin"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>GPA</label>
+                  <input
+                    type="number"
+                    name="gpa"
+                    value={studentForm.gpa}
+                    onChange={handleStudentInputChange}
+                    placeholder="VD: 3.5"
+                    step="0.01"
+                    min="0"
+                    max="4"
+                  />
+                </div>
+              </div>
+              <div className="btn-group">
+                <button type="submit" className="btn btn-primary">
+                  {editingStudent ? 'Cập nhật' : 'Thêm mới'}
+                </button>
+                {editingStudent && (
+                  <button type="button" className="btn btn-secondary" onClick={resetStudentForm}>
+                    Hủy
+                  </button>
+                )}
+              </div>
+            </form>
           </div>
-          <div className="btn-group">
-            <button type="submit" className="btn btn-primary">
-              {editingStudent ? 'Update Student' : 'Add Student'}
-            </button>
-            {editingStudent && (
-              <button type="button" className="btn btn-secondary" onClick={resetForm}>
-                Cancel
-              </button>
+
+          <div className="card">
+            <h2>Danh sách Sinh viên</h2>
+            {loadingStudents ? (
+              <div className="empty-message">Đang tải...</div>
+            ) : students.length === 0 ? (
+              <div className="empty-message">Chưa có sinh viên nào</div>
+            ) : (
+              <table>
+                <thead>
+                  <tr>
+                    <th>Mã SV</th>
+                    <th>Họ tên</th>
+                    <th>Năm sinh</th>
+                    <th>Ngành</th>
+                    <th>GPA</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {students.map((student) => (
+                    <tr key={student.student_id}>
+                      <td>{student.student_id}</td>
+                      <td>{student.name}</td>
+                      <td>{student.birth_year}</td>
+                      <td>{student.major}</td>
+                      <td>{student.gpa.toFixed(2)}</td>
+                      <td>
+                        <div className="actions">
+                          <button className="btn btn-warning btn-sm" onClick={() => handleEditStudent(student)}>
+                            Sửa
+                          </button>
+                          <button className="btn btn-danger btn-sm" onClick={() => handleDeleteStudent(student.student_id)}>
+                            Xóa
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </div>
-        </form>
-      </div>
+        </>
+      )}
 
-      {/* Students Table Card */}
-      <div className="card">
-        <h2>Student List</h2>
-        
-        {loading ? (
-          <div className="empty-message">Loading students...</div>
-        ) : students.length === 0 ? (
-          <div className="empty-message">No students found. Add your first student above!</div>
-        ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Student ID</th>
-                <th>Name</th>
-                <th>Birth Year</th>
-                <th>Major</th>
-                <th>GPA</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {students.map((student) => (
-                <tr key={student.student_id}>
-                  <td>{student.student_id}</td>
-                  <td>{student.name}</td>
-                  <td>{student.birth_year}</td>
-                  <td>{student.major}</td>
-                  <td>{student.gpa.toFixed(2)}</td>
-                  <td>
-                    <div className="actions">
-                      <button
-                        className="btn btn-warning btn-sm"
-                        onClick={() => handleEdit(student)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="btn btn-danger btn-sm"
-                        onClick={() => handleDelete(student.student_id)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      {/* CLASSES TAB */}
+      {activeTab === 'classes' && (
+        <>
+          <div className="card">
+            <h2>{editingClass ? 'Sửa Lớp học' : 'Thêm Lớp học'}</h2>
+            <form onSubmit={handleClassSubmit}>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label>Mã lớp</label>
+                  <input
+                    type="text"
+                    name="class_id"
+                    value={classForm.class_id}
+                    onChange={handleClassInputChange}
+                    placeholder="VD: CLS001"
+                    disabled={editingClass !== null}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Tên lớp</label>
+                  <input
+                    type="text"
+                    name="class_name"
+                    value={classForm.class_name}
+                    onChange={handleClassInputChange}
+                    placeholder="VD: CNTT01"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Cố vấn học tập</label>
+                  <input
+                    type="text"
+                    name="advisor"
+                    value={classForm.advisor}
+                    onChange={handleClassInputChange}
+                    placeholder="VD: Nguyễn Văn Hùng"
+                  />
+                </div>
+              </div>
+              <div className="btn-group">
+                <button type="submit" className="btn btn-primary">
+                  {editingClass ? 'Cập nhật' : 'Thêm mới'}
+                </button>
+                {editingClass && (
+                  <button type="button" className="btn btn-secondary" onClick={resetClassForm}>
+                    Hủy
+                  </button>
+                )}
+              </div>
+            </form>
+          </div>
+
+          <div className="card">
+            <h2>Danh sách Lớp học</h2>
+            {loadingClasses ? (
+              <div className="empty-message">Đang tải...</div>
+            ) : classes.length === 0 ? (
+              <div className="empty-message">Chưa có lớp học nào</div>
+            ) : (
+              <table>
+                <thead>
+                  <tr>
+                    <th>Mã lớp</th>
+                    <th>Tên lớp</th>
+                    <th>Cố vấn học tập</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {classes.map((cls) => (
+                    <tr key={cls.class_id}>
+                      <td>{cls.class_id}</td>
+                      <td>{cls.class_name}</td>
+                      <td>{cls.advisor}</td>
+                      <td>
+                        <div className="actions">
+                          <button className="btn btn-warning btn-sm" onClick={() => handleEditClass(cls)}>
+                            Sửa
+                          </button>
+                          <button className="btn btn-danger btn-sm" onClick={() => handleDeleteClass(cls.class_id)}>
+                            Xóa
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -41,4 +41,36 @@ export const studentApi = {
   },
 };
 
+export const classApi = {
+  // Get all classes
+  getAll: async () => {
+    const response = await api.get('/classes');
+    return response.data;
+  },
+
+  // Get class by ID
+  getById: async (classId) => {
+    const response = await api.get(`/classes/${classId}`);
+    return response.data;
+  },
+
+  // Create new class
+  create: async (cls) => {
+    const response = await api.post('/classes', cls);
+    return response.data;
+  },
+
+  // Update class
+  update: async (classId, cls) => {
+    const response = await api.put(`/classes/${classId}`, cls);
+    return response.data;
+  },
+
+  // Delete class
+  delete: async (classId) => {
+    const response = await api.delete(`/classes/${classId}`);
+    return response.data;
+  },
+};
+
 export default api;
