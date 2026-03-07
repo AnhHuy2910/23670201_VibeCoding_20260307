@@ -46,6 +46,14 @@ export const studentApi = {
     const response = await api.get('/students/stats/summary');
     return response.data;
   },
+
+  // Export to CSV
+  exportCsv: async () => {
+    const response = await api.get('/students/export/csv', {
+      responseType: 'blob'
+    });
+    return response.data;
+  },
 };
 
 export const classApi = {

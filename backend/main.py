@@ -1,5 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+import io
 from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session, relationship
@@ -128,7 +130,7 @@ app = FastAPI(title="Student Management API")
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -158,6 +160,35 @@ def get_student(student_id: str, db: Session = Depends(get_db)):
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
     return student
+
+@app.get("/students/export/csv")
+def export_students_csv(db: Session = Depends(get_db)):
+    """Export all students to CSV"""
+    students = db.query(StudentDB).all()
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Write header
+    writer.writerow(["student_id", "name", "birth_year", "major", "gpa", "class_id"])
+    
+    # Write data
+    for student in students:
+        writer.writerow([
+            student.student_id,
+            student.name,
+            student.birth_year,
+            student.major,
+            student.gpa,
+            student.class_id
+        ])
+    
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=students.csv"}
+    )
 
 @app.get("/students/stats/summary")
 def get_student_stats(db: Session = Depends(get_db)):

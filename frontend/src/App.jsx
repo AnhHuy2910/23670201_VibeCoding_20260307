@@ -139,6 +139,23 @@ function App() {
     }
   };
 
+  const handleExportCsv = async () => {
+    try {
+      const blob = await studentApi.exportCsv();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'students.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      showMessage('success', 'Xuất CSV thành công!');
+    } catch (err) {
+      showMessage('error', 'Không thể xuất CSV');
+    }
+  };
+
   // ========== CLASS FUNCTIONS ==========
   const fetchClasses = async () => {
     try {
@@ -340,7 +357,12 @@ function App() {
           </div>
 
           <div className="card">
-            <h2>Danh sách Sinh viên</h2>
+            <div className="card-header">
+              <h2>Danh sách Sinh viên</h2>
+              <button className="btn btn-success" onClick={handleExportCsv}>
+                Xuất CSV
+              </button>
+            </div>
             <div className="search-box">
               <input
                 type="text"
