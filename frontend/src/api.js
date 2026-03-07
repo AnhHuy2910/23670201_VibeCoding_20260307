@@ -40,6 +40,12 @@ export const studentApi = {
     const response = await api.delete(`/students/${studentId}`);
     return response.data;
   },
+
+  // Get statistics
+  getStats: async () => {
+    const response = await api.get('/students/stats/summary');
+    return response.data;
+  },
 };
 
 export const classApi = {

@@ -1,10 +1,10 @@
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey
+from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey, func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session, relationship
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 # Database setup
 SQLALCHEMY_DATABASE_URL = "sqlite:///./students.db"
@@ -158,6 +158,30 @@ def get_student(student_id: str, db: Session = Depends(get_db)):
     if not student:
         raise HTTPException(status_code=404, detail="Student not found")
     return student
+
+@app.get("/students/stats/summary")
+def get_student_stats(db: Session = Depends(get_db)):
+    """Get student statistics"""
+    # Total students
+    total_students = db.query(func.count(StudentDB.student_id)).scalar()
+    
+    # Average GPA
+    avg_gpa = db.query(func.avg(StudentDB.gpa)).scalar()
+    avg_gpa = round(avg_gpa, 2) if avg_gpa else 0
+    
+    # Students by major
+    major_stats = db.query(
+        StudentDB.major,
+        func.count(StudentDB.student_id).label('count')
+    ).group_by(StudentDB.major).all()
+    
+    students_by_major = [{"major": m.major, "count": m.count} for m in major_stats]
+    
+    return {
+        "total_students": total_students,
+        "average_gpa": avg_gpa,
+        "students_by_major": students_by_major
+    }
 
 @app.post("/students", response_model=Student)
 def create_student(student: StudentCreate, db: Session = Depends(get_db)):

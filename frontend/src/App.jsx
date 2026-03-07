@@ -31,11 +31,25 @@ function App() {
   // Common states
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  
+  // Statistics states
+  const [stats, setStats] = useState(null);
 
   useEffect(() => {
     fetchStudents();
     fetchClasses();
+    fetchStats();
   }, []);
+
+  // ========== STATISTICS FUNCTIONS ==========
+  const fetchStats = async () => {
+    try {
+      const data = await studentApi.getStats();
+      setStats(data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   // ========== STUDENT FUNCTIONS ==========
   const fetchStudents = async (search = '') => {
@@ -95,6 +109,7 @@ function App() {
       }
       resetStudentForm();
       fetchStudents();
+      fetchStats();
     } catch (err) {
       showMessage('error', err.response?.data?.detail || 'Có lỗi xảy ra');
     }
@@ -118,6 +133,7 @@ function App() {
       await studentApi.delete(studentId);
       showMessage('success', 'Xóa sinh viên thành công!');
       fetchStudents();
+      fetchStats();
     } catch (err) {
       showMessage('error', err.response?.data?.detail || 'Không thể xóa sinh viên');
     }
@@ -221,6 +237,12 @@ function App() {
           onClick={() => setActiveTab('classes')}
         >
           Quản lý Lớp học
+        </button>
+        <button
+          className={`tab ${activeTab === 'stats' ? 'active' : ''}`}
+          onClick={() => setActiveTab('stats')}
+        >
+          Thống kê
         </button>
       </div>
 
@@ -464,6 +486,47 @@ function App() {
             )}
           </div>
         </>
+      )}
+
+      {/* STATISTICS TAB */}
+      {activeTab === 'stats' && (
+        <div className="card">
+          <h2>Thống kê Sinh viên</h2>
+          {stats ? (
+            <>
+              <div className="stats-grid">
+                <div className="stat-card">
+                  <div className="stat-number">{stats.total_students}</div>
+                  <div className="stat-label">Tổng số sinh viên</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-number">{stats.average_gpa}</div>
+                  <div className="stat-label">GPA trung bình</div>
+                </div>
+              </div>
+              
+              <h3 style={{ marginTop: '30px', marginBottom: '15px' }}>Số sinh viên theo ngành</h3>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Ngành học</th>
+                    <th>Số lượng</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.students_by_major.map((item, index) => (
+                    <tr key={index}>
+                      <td>{item.major}</td>
+                      <td>{item.count}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          ) : (
+            <div className="empty-message">Đang tải thống kê...</div>
+          )}
+        </div>
       )}
     </div>
   );
