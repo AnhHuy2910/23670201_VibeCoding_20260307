@@ -144,9 +144,12 @@ def get_db():
 
 # API Endpoints
 @app.get("/students", response_model=List[Student])
-def get_students(db: Session = Depends(get_db)):
-    """Get all students"""
-    return db.query(StudentDB).all()
+def get_students(search: Optional[str] = None, db: Session = Depends(get_db)):
+    """Get all students, optionally filter by name"""
+    query = db.query(StudentDB)
+    if search:
+        query = query.filter(StudentDB.name.ilike(f"%{search}%"))
+    return query.all()
 
 @app.get("/students/{student_id}", response_model=Student)
 def get_student(student_id: str, db: Session = Depends(get_db)):

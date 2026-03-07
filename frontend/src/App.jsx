@@ -7,6 +7,7 @@ function App() {
   // Student states
   const [students, setStudents] = useState([]);
   const [loadingStudents, setLoadingStudents] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const [editingStudent, setEditingStudent] = useState(null);
   const [studentForm, setStudentForm] = useState({
     student_id: '',
@@ -37,16 +38,22 @@ function App() {
   }, []);
 
   // ========== STUDENT FUNCTIONS ==========
-  const fetchStudents = async () => {
+  const fetchStudents = async (search = '') => {
     try {
       setLoadingStudents(true);
-      const data = await studentApi.getAll();
+      const data = await studentApi.getAll(search);
       setStudents(data);
     } catch (err) {
       console.error(err);
     } finally {
       setLoadingStudents(false);
     }
+  };
+
+  const handleSearch = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    fetchStudents(value);
   };
 
   const handleStudentInputChange = (e) => {
@@ -312,6 +319,15 @@ function App() {
 
           <div className="card">
             <h2>Danh sách Sinh viên</h2>
+            <div className="search-box">
+              <input
+                type="text"
+                placeholder="Tìm kiếm theo tên sinh viên..."
+                value={searchTerm}
+                onChange={handleSearch}
+                className="search-input"
+              />
+            </div>
             {loadingStudents ? (
               <div className="empty-message">Đang tải...</div>
             ) : students.length === 0 ? (

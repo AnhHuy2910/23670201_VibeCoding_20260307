@@ -10,9 +10,10 @@ const api = axios.create({
 });
 
 export const studentApi = {
-  // Get all students
-  getAll: async () => {
-    const response = await api.get('/students');
+  // Get all students (with optional search)
+  getAll: async (search = '') => {
+    const params = search ? { search } : {};
+    const response = await api.get('/students', { params });
     return response.data;
   },
 
