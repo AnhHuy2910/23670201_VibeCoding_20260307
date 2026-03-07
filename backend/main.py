@@ -1,8 +1,8 @@
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import create_engine, Column, Integer, String, Float
+from sqlalchemy import create_engine, Column, Integer, String, Float, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker, Session, relationship
 from pydantic import BaseModel
 from typing import List, Optional
 
@@ -28,6 +28,10 @@ class StudentDB(Base):
     birth_year = Column(Integer, nullable=False)
     major = Column(String, nullable=False)
     gpa = Column(Float, nullable=False)
+    class_id = Column(String, ForeignKey("classes.class_id"), nullable=False)
+    
+    # Relationship
+    student_class = relationship("ClassDB", backref="students")
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -67,7 +71,8 @@ def seed_data():
                             name=row["name"],
                             birth_year=int(row["birth_year"]),
                             major=row["major"],
-                            gpa=float(row["gpa"])
+                            gpa=float(row["gpa"]),
+                            class_id=row["class_id"]
                         )
                         db.add(student)
                 db.commit()
@@ -84,6 +89,7 @@ class StudentBase(BaseModel):
     birth_year: int
     major: str
     gpa: float
+    class_id: str
 
 class StudentCreate(StudentBase):
     pass
@@ -93,6 +99,7 @@ class StudentUpdate(BaseModel):
     birth_year: Optional[int] = None
     major: Optional[str] = None
     gpa: Optional[float] = None
+    class_id: Optional[str] = None
 
 class Student(StudentBase):
     class Config:

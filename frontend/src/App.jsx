@@ -14,6 +14,7 @@ function App() {
     birth_year: '',
     major: '',
     gpa: '',
+    class_id: '',
   });
 
   // Class states
@@ -54,13 +55,13 @@ function App() {
   };
 
   const resetStudentForm = () => {
-    setStudentForm({ student_id: '', name: '', birth_year: '', major: '', gpa: '' });
+    setStudentForm({ student_id: '', name: '', birth_year: '', major: '', gpa: '', class_id: '' });
     setEditingStudent(null);
   };
 
   const handleStudentSubmit = async (e) => {
     e.preventDefault();
-    if (!studentForm.student_id || !studentForm.name || !studentForm.birth_year || !studentForm.major || !studentForm.gpa) {
+    if (!studentForm.student_id || !studentForm.name || !studentForm.birth_year || !studentForm.major || !studentForm.gpa || !studentForm.class_id) {
       showMessage('error', 'Vui lòng điền đầy đủ thông tin');
       return;
     }
@@ -78,6 +79,7 @@ function App() {
           birth_year: studentData.birth_year,
           major: studentData.major,
           gpa: studentData.gpa,
+          class_id: studentData.class_id,
         });
         showMessage('success', 'Cập nhật sinh viên thành công!');
       } else {
@@ -99,6 +101,7 @@ function App() {
       birth_year: student.birth_year.toString(),
       major: student.major,
       gpa: student.gpa.toString(),
+      class_id: student.class_id,
     });
   };
 
@@ -278,6 +281,21 @@ function App() {
                     max="4"
                   />
                 </div>
+                <div className="form-group">
+                  <label>Lớp học</label>
+                  <select
+                    name="class_id"
+                    value={studentForm.class_id}
+                    onChange={handleStudentInputChange}
+                  >
+                    <option value="">-- Chọn lớp --</option>
+                    {classes.map((cls) => (
+                      <option key={cls.class_id} value={cls.class_id}>
+                        {cls.class_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div className="btn-group">
                 <button type="submit" className="btn btn-primary">
@@ -307,6 +325,7 @@ function App() {
                     <th>Năm sinh</th>
                     <th>Ngành</th>
                     <th>GPA</th>
+                    <th>Lớp</th>
                     <th>Thao tác</th>
                   </tr>
                 </thead>
@@ -318,6 +337,7 @@ function App() {
                       <td>{student.birth_year}</td>
                       <td>{student.major}</td>
                       <td>{student.gpa.toFixed(2)}</td>
+                      <td>{classes.find(c => c.class_id === student.class_id)?.class_name || student.class_id}</td>
                       <td>
                         <div className="actions">
                           <button className="btn btn-warning btn-sm" onClick={() => handleEditStudent(student)}>
