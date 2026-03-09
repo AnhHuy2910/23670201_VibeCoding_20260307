@@ -11,8 +11,8 @@
 - **Database:** SQLite
 
 ## Tools sử dụng
-- **IDE:** VS Code, Cursor
-- **AI Assistant:** GitHub Copilot
+- **IDE:** VS Code
+- **AI Assistant:** GitHub Copilot (Claude Opus 4.5)
 - **Version Control:** Git, GitHub
 
 ## Tính năng
