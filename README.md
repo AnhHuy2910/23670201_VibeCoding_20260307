@@ -1,4 +1,4 @@
-# Hệ Thống Quản Lý Sinh Viên
+# VIBE CODING - HỆ THỐNG QUẢN LÝ SINH VIÊN
 
 ## Thông tin cá nhân
 - **Họ và tên:** Nguyễn Anh Huy

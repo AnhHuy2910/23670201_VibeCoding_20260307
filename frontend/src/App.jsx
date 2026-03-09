@@ -65,9 +65,11 @@ function App() {
   };
 
   const handleSearch = (e) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-    fetchStudents(value);
+    setSearchTerm(e.target.value);
+  };
+
+  const handleSearchClick = () => {
+    fetchStudents(searchTerm);
   };
 
   const handleStudentInputChange = (e) => {
@@ -371,6 +373,9 @@ function App() {
                 onChange={handleSearch}
                 className="search-input"
               />
+              <button className="btn btn-primary" onClick={handleSearchClick}>
+                Tìm kiếm
+              </button>
             </div>
             {loadingStudents ? (
               <div className="empty-message">Đang tải...</div>
